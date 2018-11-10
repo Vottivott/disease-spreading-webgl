@@ -7,12 +7,13 @@ var stats;
 var gui;
 
 var settings = {
-    initial_s: 399999,
+    initial_s: 399999,//999,
     initial_i: 1,
     initial_r: 0,
     diffusion_rate: 0.8,
     transmission_rate: 0.6,
     recovery_rate: 0.01,
+    periodic_boundary: false,
 
 	target_fps: 60,
     steps_per_frame: 1,
@@ -103,8 +104,8 @@ var movementFramebuffer;
 // var SMoveTexture, IMoveTexture, RMoveTexture; // (RGBA32F)
 // var SIRStayTexture; // (RGB32F)
 
-var lattice_width = 1024;//120;
-var lattice_height = 512;//120;
+var lattice_width = 1024;//100;
+var lattice_height = 512;//100;
 // lattice_width = window.innerWidth;
 // lattice_height = window.innerHeight;
 
@@ -413,7 +414,7 @@ function init() {
 	picoTimer = app.createTimer();
 
 	gui = new dat.GUI();
-    gui.add(settings, 'initial_s', 0, 1000000).step(1).onChange(function(newValue) {
+    gui.add(settings, 'initial_s', 0, 1000000).step(1).onChange(function(newValue) { // 10 000
         restartSimulation();
     });
     gui.add(settings, 'initial_i', 0, 1000000).step(1).onChange(function(newValue) {
@@ -425,6 +426,7 @@ function init() {
     gui.add(settings, 'diffusion_rate', 0.0, 1.0);
     gui.add(settings, 'transmission_rate', 0.0, 1.0);
     gui.add(settings, 'recovery_rate', 0.0, 1.0);
+    gui.add(settings, 'periodic_boundary');
     gui.add(settings, 'target_fps', 0, 120).step(1);
     gui.add(settings, 'steps_per_frame', 1, 20).step(1);
 
@@ -1412,6 +1414,7 @@ function calculateSIRMovement() {
         .uniform('u_lattice_width', lattice_width)
         .uniform('u_lattice_height', lattice_height)
         .uniform('u_rand', Math.random())
+        .uniform('u_periodic_boundary', settings['periodic_boundary'])
         .texture('u_SIRTexture', SIRFramebuffer.colorTextures[0])
         // .texture('u_noiseTexture', noiseTexture)
         .draw();

@@ -14,6 +14,7 @@ uniform float u_diffusion_rate;
 uniform float u_num_rands_per_pixel;
 uniform int u_lattice_width;
 uniform int u_lattice_height;
+uniform bool u_periodic_boundary;
 
 layout(location = 0) out vec4 o_s_move; // R = right, G = up, B = left, A = down 
 layout(location = 1) out vec4 o_i_move; // R = right, G = up, B = left, A = down
@@ -115,6 +116,31 @@ void main()
             o_sir_stay.b++; //stay++;
         }
     }
+
+    if (!u_periodic_boundary) {
+        if (x == u_lattice_width-1) {
+            o_sir_stay.r += o_s_move.r; o_s_move.r = 0.0;
+            o_sir_stay.g += o_i_move.r; o_i_move.r = 0.0;
+            o_sir_stay.b += o_r_move.r; o_r_move.r = 0.0;
+        }
+        if (x == 0) {
+            o_sir_stay.r += o_s_move.b; o_s_move.b = 0.0;
+            o_sir_stay.g += o_i_move.b; o_i_move.b = 0.0;
+            o_sir_stay.b += o_r_move.b; o_r_move.b = 0.0;
+        }
+        if (y == u_lattice_height-1) {
+            o_sir_stay.r += o_s_move.g; o_s_move.g = 0.0;
+            o_sir_stay.g += o_i_move.g; o_i_move.g = 0.0;
+            o_sir_stay.b += o_r_move.g; o_r_move.g = 0.0;
+        }
+        if (y == 0) {
+            o_sir_stay.r += o_s_move.a; o_s_move.a = 0.0;
+            o_sir_stay.g += o_i_move.a; o_i_move.a = 0.0;
+            o_sir_stay.b += o_r_move.a; o_r_move.a = 0.0;
+        }
+    }
+
+
 
 }
 
