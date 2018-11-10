@@ -1,0 +1,20 @@
+noiseTexture (R32)
+
+
+
+SIRTexture (RGB32)
+
+S = red
+I = green
+R = blue
+
+
+sMovementTexture, iMovementTexture, rMovementTexture (RGBA32)
+
+right = red
+up = green
+left = blue
+down = alpha
+
+(stay = SIRTexture - right - up - left - down)
+
