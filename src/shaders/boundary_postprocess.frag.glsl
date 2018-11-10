@@ -23,7 +23,7 @@ void main()
 
     vec4 px = texelFetch(u_SIRTexture, ivec2(x,y), 0);
 
-    o_color = vec4(px.rgb / 255.0,1.0);
+    o_color = vec4((px.rgb+0.5) / 255.0,1.0);
 
 
 

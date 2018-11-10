@@ -120,6 +120,7 @@ var calcMovementDrawCall;
 var boundaryPostprocessDrawCall;
 var boundaryPostprocessFramebuffer;
 
+var sir_counts = [0, 0, 0];
 
 
 
@@ -626,6 +627,16 @@ function makeRandomSIRTexture(width, height, S, I, R) {
     return app.createTexture2D(image_data, width, height, options);
 }
 
+function getSIRCountsFromUint8Array(data) {
+    var sir_counts = [0, 0, 0]
+    for (var i = 0; i < data.length; i+=4) {
+        sir_counts[0] += data[i];
+        sir_counts[1] += data[i+1];
+        sir_counts[2] += data[i+2];
+    }
+    return sir_counts;
+} 
+
 function initProbeToggleControls() {
     window.addEventListener('keydown', function(e) {
         if (e.keyCode === 80) { /* p */
@@ -1064,8 +1075,21 @@ function render() {
         app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, boundaryPostprocessFramebuffer.framebuffer);//SIRFramebuffer.framebuffer);
         var pixels = new Uint8Array(lattice_width * lattice_height * 4);
         app.gl.readPixels(0,0,lattice_width, lattice_height, app.gl.RGBA, app.gl.UNSIGNED_BYTE, pixels);
-        console.log(pixels);
         app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, null);
+        var old_sir_counts = sir_counts;
+        old_sir_sum = sir_counts[0] + sir_counts[1] + sir_counts[2];
+        sir_counts = getSIRCountsFromUint8Array(pixels);
+        sir_sum = sir_counts[0] + sir_counts[1] + sir_counts[2];
+        if (old_sir_sum != sir_sum) {
+            console.log(old_sir_counts);
+            console.log(old_sir_sum);
+            console.log("->")
+            console.log(sir_counts);
+            console.log(sir_sum);
+            console.log("\n");
+
+        }
+        
 
 
         // renderBoundaryPostprocess();
