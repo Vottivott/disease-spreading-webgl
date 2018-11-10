@@ -1035,6 +1035,14 @@ function render() {
             applySIRMovement();
         }
         renderTextureToScreen(SIRFramebuffer.colorTextures[0]);
+
+        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, SIRFramebuffer.framebuffer);
+        var pixels = new Uint8Array(lattice_width * lattice_height * 4);
+        app.gl.readPixels(0,0,lattice_width, lattice_height, app.gl.RGBA, app.gl.UNSIGNED_BYTE, pixels);
+        console.log(pixels);
+        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, null);
+
+
         // renderBoundaryPostprocess();
 
         // renderTextureToScreen(movementFramebuffer.colorTextures[0]);
