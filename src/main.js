@@ -118,6 +118,8 @@ var noiseTextureHeight = num_rands_per_pixel;
 var applySIRMovementDrawCall;
 var calcMovementDrawCall;
 var boundaryPostprocessDrawCall;
+var boundaryPostprocessFramebuffer;
+
 
 
 
@@ -495,6 +497,7 @@ function init() {
 
     setupSIRFramebuffer(lattice_width, lattice_height);
     setupMovementFramebuffer(lattice_width, lattice_height);
+    setupBoundaryPostprocessFramebuffer(lattice_width, lattice_height);
 
 }
 
@@ -513,6 +516,26 @@ function setupSIRFramebuffer(width, height) {
         format: PicoGL.DEPTH_COMPONENT
     });
     SIRFramebuffer = app.createFramebuffer()
+        .colorTarget(0, colorBuffer)
+        .depthTarget(depthBuffer);
+}
+
+
+function setupBoundaryPostprocessFramebuffer(width, height) {
+
+    var colorBuffer = app.createTexture2D(width, height, {
+        internalFormat: PicoGL.RGBA8,
+        format: PicoGL.Float,
+        minFilter: PicoGL.NEAREST,
+        magFilter: PicoGL.NEAREST,
+    });
+    // colorBuffer.options['internalFormat'] = PicoGL.RGBA32F;
+    // colorBuffer.options['minFilter'] = PicoGL.NEAREST;
+    // colorBuffer.options['magFilter'] = PicoGL.NEAREST;
+    var depthBuffer = app.createTexture2D(width, height, {
+        format: PicoGL.DEPTH_COMPONENT
+    });
+    boundaryPostprocessFramebuffer = app.createFramebuffer()
         .colorTarget(0, colorBuffer)
         .depthTarget(depthBuffer);
 }
@@ -1036,7 +1059,9 @@ function render() {
         }
         renderTextureToScreen(SIRFramebuffer.colorTextures[0]);
 
-        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, app.defaultDrawFramebuffer().framebuffer);//SIRFramebuffer.framebuffer);
+        renderBoundaryPostprocess();
+        // app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, app.defaultDrawFramebuffer().framebuffer);//SIRFramebuffer.framebuffer);
+        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, boundaryPostprocessFramebuffer.framebuffer);//SIRFramebuffer.framebuffer);
         var pixels = new Uint8Array(lattice_width * lattice_height * 4);
         app.gl.readPixels(0,0,lattice_width, lattice_height, app.gl.RGBA, app.gl.UNSIGNED_BYTE, pixels);
         console.log(pixels);
@@ -1467,14 +1492,16 @@ function applySIRMovement() {
 
 function renderBoundaryPostprocess() {
 
-    if (!boundaryPostprocessDrawCall || !SIRFramebuffer) {
+    if (!boundaryPostprocessDrawCall || !boundaryPostprocessFramebuffer) {
         return;
     }
 
-    app.defaultDrawFramebuffer()
-    .defaultViewport()
-    .noDepthTest()
-    .noBlend();
+     app.drawFramebuffer(boundaryPostprocessFramebuffer)
+        .viewport(0, 0, lattice_width, lattice_height)
+        .noDepthTest()
+        .noBlend()
+        .clearColor(0,0,0)
+        .clear();
 
 
     boundaryPostprocessDrawCall
