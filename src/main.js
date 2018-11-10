@@ -7,7 +7,7 @@ var stats;
 var gui;
 
 var settings = {
-    initial_s: 399999,//999,
+    initial_s: 999,
     initial_i: 1,
     initial_r: 0,
     diffusion_rate: 0.8,
@@ -104,8 +104,8 @@ var movementFramebuffer;
 // var SMoveTexture, IMoveTexture, RMoveTexture; // (RGBA32F)
 // var SIRStayTexture; // (RGB32F)
 
-var lattice_width = 1024;//100;
-var lattice_height = 512;//100;
+var lattice_width = 100;//120;
+var lattice_height = 100;//120;
 // lattice_width = window.innerWidth;
 // lattice_height = window.innerHeight;
 
@@ -414,13 +414,13 @@ function init() {
 	picoTimer = app.createTimer();
 
 	gui = new dat.GUI();
-    gui.add(settings, 'initial_s', 0, 1000000).step(1).onChange(function(newValue) { // 10 000
+    gui.add(settings, 'initial_s', 0, 10000).step(1).onChange(function(newValue) {
         restartSimulation();
     });
-    gui.add(settings, 'initial_i', 0, 1000000).step(1).onChange(function(newValue) {
+    gui.add(settings, 'initial_i', 0, 10000).step(1).onChange(function(newValue) {
         restartSimulation();
     });
-    gui.add(settings, 'initial_r', 0, 1000000).step(1).onChange(function(newValue) {
+    gui.add(settings, 'initial_r', 0, 10000).step(1).onChange(function(newValue) {
         restartSimulation();
     });
     gui.add(settings, 'diffusion_rate', 0.0, 1.0);
@@ -956,8 +956,8 @@ function resize() {
 	// w = 1920;//*0.8;
 	// h = 1080;//*0.8;
 
-    var w = 1*lattice_width;
-    var h = 1*lattice_height;
+    var w = 4*lattice_width;
+    var h = 4*lattice_height;
 
 
 	app.resize(w, h);
