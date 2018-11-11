@@ -132,28 +132,60 @@ void main()
     // -- 2. Infection and recovery ------ 
 
     int r_index = 0;
-    float current_S = o_color.r;
-    float current_I = o_color.g;
-    float current_R = o_color.b;
-    float transmissions = 0.0;
-    float recoveries = 0.0;
-    for (float i = 0.0; i < current_I; i++) {
+    int current_S = int(o_color.r);
+    int current_I = int(o_color.g);
+    int current_R = int(o_color.b);
+    int transmissions = 0;
+    int recoveries = 0;
+
+    // Infection
+    for (int s = 0; s < current_S; s++) {
         // TODO: Check whether this is the correct interpretation
-        for (float s = 0.0; s < current_S; s++) {
+        bool infected = false;
+        for (int i = 0; i < current_I; i++) {
             float rand = random(x,y,r_index++);
             if (rand < u_transmission_rate) {
                 transmissions++;
+                break; // We are now infected, break to avoid double-counting
             }
         }
+    }
+
+    // Recovery
+    for (int i = 0; i < current_I; i++) {
         float rand = random(x,y,r_index++);
         if (rand < u_recovery_rate) {
             recoveries++;
         }
     }
-    o_color = vec4(current_S - transmissions,
-                   current_I + transmissions - recoveries,
-                   current_R + recoveries,
+    
+    // transmissions = 0;
+    // if (transmissions > 2) {
+    //     transmissions = 2;
+    // }
+    // for (int i = 0; i < transmissions; i++) {
+    //     current_S--;
+    //     current_I++;
+    // }
+    // o_color = vec4(float(current_S),
+    //                float(current_I),
+    //                float(current_R),
+    //                1.0);
+    // recoveries = 0;
+    // recoveries = 0;
+    o_color = vec4(float(current_S - transmissions),
+                   float(current_I - recoveries + transmissions),
+                   float(current_R + recoveries),
                    1.0);
+    // if (current_S < transmissions) {
+    //     o_color = vec4(0, 0, 10, 1.0);
+    // }
+    // if (int(o_color.r) + int(o_color.g) + int(o_color.b) != int(current_S) + int(current_I) + int(current_R)) {
+    //     // o_color = vec4(100.0, 100.0, 100.0, 1.0);
+    //     o_color = vec4(0, 0, 10, 1.0);
+    // }
+
+
 
 }
 
