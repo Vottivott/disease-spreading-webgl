@@ -9,7 +9,7 @@ uniform sampler2D u_s_move_texture;
 uniform sampler2D u_i_move_texture;
 uniform sampler2D u_r_move_texture;
 uniform sampler2D u_sir_stay_texture;
-// uniform sampler2D u_noiseTexture;
+uniform sampler2D u_noiseTexture;
 
 uniform float u_transmission_rate;
 uniform float u_recovery_rate;
@@ -18,6 +18,7 @@ uniform float u_rand;
 uniform float u_num_rands_per_pixel;
 uniform int u_lattice_width;
 uniform int u_lattice_height;
+uniform bool u_true_randomness;
 
 layout(location = 0) out vec4 o_color;
 
@@ -34,15 +35,19 @@ highp float random2(vec2 co)
 }
 
 float random(int x, int y, int local_agent_index) {
-    // return texelFetch(u_noiseTexture, ivec2(y*u_lattice_width + x, mod(float(local_agent_index), u_num_rands_per_pixel)), 0).r;
-    return random2(vec2(float(y*u_lattice_width + x) / float(u_lattice_width * u_lattice_height),  (u_rand + mod(float(local_agent_index), u_num_rands_per_pixel)/u_num_rands_per_pixel) / 2.0 )); // TODO: FIXA
+    float texture_rand = texelFetch(u_noiseTexture, ivec2(y*u_lattice_width + x, mod(float(local_agent_index), u_num_rands_per_pixel)), 0).r;
+    if (u_true_randomness) {
+        return texture_rand;   // Assumes that the texture is updated between every rendering call  
+    } else {
+        return random2(vec2(float(y*u_lattice_width + x) / float(u_lattice_width * u_lattice_height),  (u_rand + mod(float(local_agent_index), u_num_rands_per_pixel)/u_num_rands_per_pixel) / 2.0 ));;
+    }
 }
 
 
 
 
 
-// float random(int x, int y, int local_agent_index) {
+// float random_true(int x, int y, int local_agent_index) {
 //     return texelFetch(u_noiseTexture, ivec2(y*u_lattice_width + x, mod(float(local_agent_index), u_num_rands_per_pixel)), 0).r;
 // }
 

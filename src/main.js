@@ -15,8 +15,11 @@ var settings = {
     recovery_rate: 0.01,
     periodic_boundary: false,
 
+    true_randomness: false,
 	target_fps: 60,
     steps_per_frame: 1,
+
+    Restart: function() { restart(); },
 };
 
 var sceneSettings = {
@@ -24,6 +27,8 @@ var sceneSettings = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+var running = true;
 
 var app;
 
@@ -139,36 +144,96 @@ window.addEventListener('DOMContentLoaded', function () {
 
 }, false);
 
+function appendSIRCountsToChart(sir_counts) {
+    var t;
+    if (chart.data.datasets[0].data.length > 0) {
+        t = chart.data.datasets[0].data[chart.data.datasets[0].data.length-1].x + 1;        
+    } else {
+        t = 0;
+    }
+    chart.data.datasets[0].data.push({x:t, y:sir_counts[0]});
+    chart.data.datasets[1].data.push({x:t, y:sir_counts[1]});
+    chart.data.datasets[2].data.push({x:t, y:sir_counts[2]});
+}
+
+function updateChartTitle() {
+    chart.options.title.text = 'd=' + settings['diffusion_rate'].toFixed(2) + '      β=' + settings['transmission_rate'].toFixed(2) + '      γ=' + settings['recovery_rate'].toFixed(2);
+}
+
 function initChart() {
-    var chart = new Chart("chart", {
-    type: 'line',
+    chart = new Chart("chart", {
+    type: 'scatter',
     data: {
             datasets: [{
-                label: 'S',
-                data: [12, 19, 3, 5, 2, 3],
-                borderColor: [
-                    'rgba(255,99,132,1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)'
-                ],
-                borderWidth: 1
+                label: 'susceptible',
+                data: [],
+                borderColor: 'rgba(255,99,132,1)',
+                backgroundColor: 'rgba(0,0,0,0)',
+                fill: false,
+                lineTension: 0,
+            },{
+                label: 'infected',
+                data: [],
+                borderColor: 'rgba(159, 255, 64, 1)',
+                backgroundColor: 'rgba(0,0,0,0)',
+                fill: false,
+                lineTension: 0,
+            },
+            {
+                label: 'recovered',
+                data: [],
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(0,0,0,0)',
+                fill: false,
+                lineTension: 0,
             }]
         },
         options: {
+            animation: false,
             responsive:true,
+            // showTooltips: false,
             maintainAspectRatio:false,
+            title: {display: true, text: 'd=0.8      β=0.6      γ=0.01'},
+            // title: {display: true, text: 'diffusion rate: 0.8      transmission rate: 0.6      recovery rate: 0.01'},
             scales: {
                 yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Number of agents',
+                    },
+                    ticks: {
+                        beginAtZero:true
+                    }
+                }],
+                xAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time step',
+                    },
                     ticks: {
                         beginAtZero:true
                     }
                 }]
-            }
+            },
+             elements: {
+                point: {
+                    radius: 1
+                }
+            },
         }
     });
+    setInterval(function() {
+        chart.update();
+    }, 2000);
+}
+
+function restart() {
+    running = true;
+    chart.data.datasets[0].data = [];
+    chart.data.datasets[1].data = [];
+    chart.data.datasets[2].data = [];
+    chart.update();
+    restartSimulation();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -453,20 +518,31 @@ function init() {
 
 	gui = new dat.GUI();
     gui.add(settings, 'initial_s', 0, 10000).step(1).onChange(function(newValue) {
-        restartSimulation();
+        restart();
     });
     gui.add(settings, 'initial_i', 0, 10000).step(1).onChange(function(newValue) {
-        restartSimulation();
+        restart();
     });
     gui.add(settings, 'initial_r', 0, 10000).step(1).onChange(function(newValue) {
-        restartSimulation();
+        restart();
     });
-    gui.add(settings, 'diffusion_rate', 0.0, 1.0);
-    gui.add(settings, 'transmission_rate', 0.0, 1.0);
-    gui.add(settings, 'recovery_rate', 0.0, 1.0);
+    gui.add(settings, 'diffusion_rate', 0.0, 1.0).onChange(function(newValue) {
+        updateChartTitle();
+        chart.update();
+    });
+    gui.add(settings, 'transmission_rate', 0.0, 1.0).onChange(function(newValue) {
+        updateChartTitle();
+        chart.update();
+    });
+    gui.add(settings, 'recovery_rate', 0.0, 1.0).onChange(function(newValue) {
+        updateChartTitle();
+        chart.update();
+    });
     gui.add(settings, 'periodic_boundary');
+    gui.add(settings, 'true_randomness');
     gui.add(settings, 'target_fps', 0, 120).step(1);
-    gui.add(settings, 'steps_per_frame', 1, 20).step(1);
+    gui.add(settings, 'steps_per_frame', 1, 200).step(1);
+    gui.add(settings, 'Restart');
 
 	//////////////////////////////////////
 	// Basic GL state
@@ -527,7 +603,7 @@ function init() {
 	});
 
     // TODO: loading
-    // noiseTexture = makeNoiseTexture(noiseTextureWidth, noiseTextureHeight);
+    noiseTexture = makeNoiseTexture(noiseTextureWidth, noiseTextureHeight);
     SIRTexture = makeRandomSIRTexture(lattice_width, lattice_height, settings['initial_s'], settings['initial_i'], settings['initial_r']);
 
 
@@ -671,6 +747,7 @@ function getSIRCountsFromUint8Array(data) {
     }
     return sir_counts;
 } 
+
 
 function initProbeToggleControls() {
     window.addEventListener('keydown', function(e) {
@@ -1034,6 +1111,29 @@ function resize() {
 
 }
 
+function updateSIRChart() {
+    renderByteUnsignedPostprocess();
+    // app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, app.defaultDrawFramebuffer().framebuffer);//SIRFramebuffer.framebuffer);
+    app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, byteUnsignedPostprocessFramebuffer.framebuffer);//SIRFramebuffer.framebuffer);
+    var pixels = new Uint8Array(lattice_width * lattice_height * 4);
+    app.gl.readPixels(0,0,lattice_width, lattice_height, app.gl.RGBA, app.gl.UNSIGNED_BYTE, pixels);
+    app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, null);
+    var old_sir_counts = sir_counts;
+    old_sir_sum = sir_counts[0] + sir_counts[1] + sir_counts[2];
+    sir_counts = getSIRCountsFromUint8Array(pixels);
+    sir_sum = sir_counts[0] + sir_counts[1] + sir_counts[2];
+    if (old_sir_sum != sir_sum) {
+        console.log(old_sir_counts);
+        console.log(old_sir_sum);
+        console.log("->")
+        console.log(sir_counts);
+        console.log(sir_sum);
+        console.log("\n");
+
+    }
+    appendSIRCountsToChart(sir_counts);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
@@ -1095,35 +1195,30 @@ function render() {
         // renderTextureToScreen(noiseTexture);
         // renderTextureToScreen(SIRTexture);
 
-        // applySIRMovement();
+        if (running) {
 
-        for (var i = 0; i < settings['steps_per_frame']; i++) {
-            // noiseTexture = makeNoiseTexture(noiseTextureWidth, noiseTextureHeight);
-            calculateSIRMovement();
-            // noiseTexture = makeNoiseTexture(noiseTextureWidth, noiseTextureHeight);
-            applySIRMovement();
+            for (var i = 0; i < settings['steps_per_frame']; i++) {
+                if (settings['true_randomness']) {
+                    noiseTexture = makeNoiseTexture(noiseTextureWidth, noiseTextureHeight);
+                }
+                calculateSIRMovement();
+                if (settings['true_randomness']) {
+                    noiseTexture = makeNoiseTexture(noiseTextureWidth, noiseTextureHeight);
+                }
+                applySIRMovement();
+
+                updateSIRChart();
+
+                if (sir_counts[1] == 0 && sir_counts[0]+sir_counts[2]>0) { // Terminate when the number of infected agents is zero
+                    running = false;
+                    setTimeout(function(){chart.update();}, 10);
+                }
+            }
+            renderTextureToScreen(SIRFramebuffer.colorTextures[0]);
+            
         }
-        renderTextureToScreen(SIRFramebuffer.colorTextures[0]);
 
-        renderByteUnsignedPostprocess();
-        // app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, app.defaultDrawFramebuffer().framebuffer);//SIRFramebuffer.framebuffer);
-        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, byteUnsignedPostprocessFramebuffer.framebuffer);//SIRFramebuffer.framebuffer);
-        var pixels = new Uint8Array(lattice_width * lattice_height * 4);
-        app.gl.readPixels(0,0,lattice_width, lattice_height, app.gl.RGBA, app.gl.UNSIGNED_BYTE, pixels);
-        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, null);
-        var old_sir_counts = sir_counts;
-        old_sir_sum = sir_counts[0] + sir_counts[1] + sir_counts[2];
-        sir_counts = getSIRCountsFromUint8Array(pixels);
-        sir_sum = sir_counts[0] + sir_counts[1] + sir_counts[2];
-        if (old_sir_sum != sir_sum) {
-            console.log(old_sir_counts);
-            console.log(old_sir_sum);
-            console.log("->")
-            console.log(sir_counts);
-            console.log(sir_sum);
-            console.log("\n");
-
-        }
+        
         
 
 
@@ -1165,6 +1260,10 @@ function render() {
 	setTimeout( function() {
 		requestAnimationFrame(render);
 	}, 1000 / settings.target_fps - renderDelta-1000/120);
+
+    // if (!running) {
+    //     chart.update();
+    // }
 
 }
 
@@ -1506,9 +1605,10 @@ function calculateSIRMovement() {
         .uniform('u_lattice_width', lattice_width)
         .uniform('u_lattice_height', lattice_height)
         .uniform('u_rand', Math.random())
+        .uniform('u_true_randomness', settings['true_randomness'])
         .uniform('u_periodic_boundary', settings['periodic_boundary'])
         .texture('u_SIRTexture', SIRFramebuffer.colorTextures[0])
-        // .texture('u_noiseTexture', noiseTexture)
+        .texture('u_noiseTexture', noiseTexture)
         .draw();
     // blitTextureDrawCall
     // .texture('u_texture', SIRTexture)
@@ -1536,11 +1636,12 @@ function applySIRMovement() {
         .uniform('u_lattice_width', lattice_width)
         .uniform('u_lattice_height', lattice_height)
         .uniform('u_rand', Math.random())
+        .uniform('u_true_randomness', settings['true_randomness'])
         .texture('u_s_move_texture', movementFramebuffer.colorTextures[0])
         .texture('u_i_move_texture', movementFramebuffer.colorTextures[1])
         .texture('u_r_move_texture', movementFramebuffer.colorTextures[2])
         .texture('u_sir_stay_texture', movementFramebuffer.colorTextures[3])
-        // .texture('u_noiseTexture', noiseTexture)
+        .texture('u_noiseTexture', noiseTexture)
         .draw();
     // blitTextureDrawCall
     // .texture('u_texture', SIRTexture)
