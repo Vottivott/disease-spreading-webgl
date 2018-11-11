@@ -27,6 +27,8 @@ var sceneSettings = {
 
 var app;
 
+var chart;
+
 var gpuTimePanel;
 var picoTimer;
 
@@ -117,8 +119,8 @@ var noiseTextureHeight = num_rands_per_pixel;
 
 var applySIRMovementDrawCall;
 var calcMovementDrawCall;
-var boundaryPostprocessDrawCall;
-var boundaryPostprocessFramebuffer;
+var byteUnsignedPostprocessDrawCall;
+var byteUnsignedPostprocessFramebuffer;
 
 var sir_counts = [0, 0, 0];
 
@@ -129,12 +131,45 @@ var sir_counts = [0, 0, 0];
 window.addEventListener('DOMContentLoaded', function () {
 
 	init();
+    initChart();
 	resize();
 
 	window.addEventListener('resize', resize, false);
 	requestAnimationFrame(render);
 
 }, false);
+
+function initChart() {
+    var chart = new Chart("chart", {
+    type: 'line',
+    data: {
+            datasets: [{
+                label: 'S',
+                data: [12, 19, 3, 5, 2, 3],
+                borderColor: [
+                    'rgba(255,99,132,1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive:true,
+            maintainAspectRatio:false,
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero:true
+                    }
+                }]
+            }
+        }
+    });
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Utility
@@ -464,7 +499,7 @@ function init() {
     shaderLoader.addShaderProgram('applySIRMovement', 'apply_movement.vert.glsl', 'apply_movement.frag.glsl');
     shaderLoader.addShaderProgram('calcMovement', 'calc_movement.vert.glsl', 'calc_movement.frag.glsl');
     
-    shaderLoader.addShaderProgram('boundaryPostprocess', 'boundary_postprocess.vert.glsl', 'boundary_postprocess.frag.glsl');
+    shaderLoader.addShaderProgram('byteUnsignedPostprocess', 'boundary_postprocess.vert.glsl', 'boundary_postprocess.frag.glsl');
     
 
 	shaderLoader.load(function(data) {
@@ -481,8 +516,8 @@ function init() {
         var calcMovementShader = makeShader('calcMovement', data);
         calcMovementDrawCall = app.createDrawCall(calcMovementShader, fullscreenVertexArray);
 
-        var boundaryPostprocessShader = makeShader('boundaryPostprocess', data);
-        boundaryPostprocessDrawCall = app.createDrawCall(boundaryPostprocessShader, fullscreenVertexArray);
+        var byteUnsignedPostprocessShader = makeShader('byteUnsignedPostprocess', data);
+        byteUnsignedPostprocessDrawCall = app.createDrawCall(byteUnsignedPostprocessShader, fullscreenVertexArray);
 
 
 
@@ -498,7 +533,7 @@ function init() {
 
     setupSIRFramebuffer(lattice_width, lattice_height);
     setupMovementFramebuffer(lattice_width, lattice_height);
-    setupBoundaryPostprocessFramebuffer(lattice_width, lattice_height);
+    setupByteUnsignedPostprocessFramebuffer(lattice_width, lattice_height);
 
 }
 
@@ -522,7 +557,7 @@ function setupSIRFramebuffer(width, height) {
 }
 
 
-function setupBoundaryPostprocessFramebuffer(width, height) {
+function setupByteUnsignedPostprocessFramebuffer(width, height) {
 
     var colorBuffer = app.createTexture2D(width, height, {
         internalFormat: PicoGL.RGBA8,
@@ -536,7 +571,7 @@ function setupBoundaryPostprocessFramebuffer(width, height) {
     var depthBuffer = app.createTexture2D(width, height, {
         format: PicoGL.DEPTH_COMPONENT
     });
-    boundaryPostprocessFramebuffer = app.createFramebuffer()
+    byteUnsignedPostprocessFramebuffer = app.createFramebuffer()
         .colorTarget(0, colorBuffer)
         .depthTarget(depthBuffer);
 }
@@ -1070,9 +1105,9 @@ function render() {
         }
         renderTextureToScreen(SIRFramebuffer.colorTextures[0]);
 
-        renderBoundaryPostprocess();
+        renderByteUnsignedPostprocess();
         // app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, app.defaultDrawFramebuffer().framebuffer);//SIRFramebuffer.framebuffer);
-        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, boundaryPostprocessFramebuffer.framebuffer);//SIRFramebuffer.framebuffer);
+        app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, byteUnsignedPostprocessFramebuffer.framebuffer);//SIRFramebuffer.framebuffer);
         var pixels = new Uint8Array(lattice_width * lattice_height * 4);
         app.gl.readPixels(0,0,lattice_width, lattice_height, app.gl.RGBA, app.gl.UNSIGNED_BYTE, pixels);
         app.gl.bindFramebuffer(app.gl.FRAMEBUFFER, null);
@@ -1092,7 +1127,7 @@ function render() {
         
 
 
-        // renderBoundaryPostprocess();
+        // renderByteUnsignedPostprocess();
 
         // renderTextureToScreen(movementFramebuffer.colorTextures[0]);
         
@@ -1514,13 +1549,13 @@ function applySIRMovement() {
 }
 
 
-function renderBoundaryPostprocess() {
+function renderByteUnsignedPostprocess() {
 
-    if (!boundaryPostprocessDrawCall || !boundaryPostprocessFramebuffer) {
+    if (!byteUnsignedPostprocessDrawCall || !byteUnsignedPostprocessFramebuffer) {
         return;
     }
 
-     app.drawFramebuffer(boundaryPostprocessFramebuffer)
+     app.drawFramebuffer(byteUnsignedPostprocessFramebuffer)
         .viewport(0, 0, lattice_width, lattice_height)
         .noDepthTest()
         .noBlend()
@@ -1528,7 +1563,7 @@ function renderBoundaryPostprocess() {
         .clear();
 
 
-    boundaryPostprocessDrawCall
+    byteUnsignedPostprocessDrawCall
         .texture('u_SIRTexture', SIRFramebuffer.colorTextures[0])
         .draw();
     

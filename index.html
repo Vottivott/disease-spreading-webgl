@@ -9,10 +9,31 @@
 				padding: 0;
 				overflow: hidden;
 			}
+
+			body {
+				padding: 20px;
+			}
+
+			#canvas, .chart-container {
+				display: inline-block;
+			}
+
+			/*#chart {
+				width: 100px !important;
+				height: 100px !important;
+			}*/
+
+			.chart-container {
+			    width: 400px;
+			    height:400px
+			}
 		</style>
 	</head>
 	<body>
 		<canvas id="canvas"></canvas>
+		<div class="chart-container">
+			<canvas id="chart" width="10" height="10"></canvas>
+		</div>
 		<!--<canvas id="canvas" width="1920" height="1080"></canvas>-->
 
 		<!-- core -->
@@ -31,9 +52,14 @@
 		<script src="deps/stats.min.js" charset="utf-8"></script>
 		<script src="deps/dat.gui.min.js" charset="utf-8"></script>
 
+		<script src="deps/Chart.bundle.min.js" charset="utf-8"></script>
+
 		<script src="src/Camera.js" charset="utf-8"></script>
 		<script src="src/ShaderLoader.js" charset="utf-8"></script>
 		<script src="src/DirectionalLight.js" charset="utf-8"></script>
 		<script src="src/main.js" charset="utf-8"></script>
+
+
+
 	</body>
 </html>
