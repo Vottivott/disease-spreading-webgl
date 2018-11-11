@@ -19,6 +19,8 @@ var settings = {
 	target_fps: 60,
     steps_per_frame: 1,
 
+    display_chart: true,
+
     Restart: function() { restart(); },
 };
 
@@ -129,8 +131,10 @@ var byteUnsignedPostprocessFramebuffer;
 
 var sir_counts = [0, 0, 0];
 
-
-
+var stoppedCallback = undefined;
+var recordedR0ValuesX = [];
+var recordedR0ValuesY = [];
+var runsPerSetting = 1000;
 
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -139,10 +143,39 @@ window.addEventListener('DOMContentLoaded', function () {
     initChart();
 	resize();
 
+    initR0Program(0,0,0.0);
+
 	window.addEventListener('resize', resize, false);
 	requestAnimationFrame(render);
 
 }, false);
+
+function initR0Program(run_index, setting_index, current_sum) {
+    
+    // R0 = settings['transmission_rate'] / settings['recovery_rate']
+    var R0 = 20.0 - setting_index/10.0;
+    if (settings['transmission_rate'] / R0 <= 1.0) {
+        settings['recovery_rate'] = settings['transmission_rate'] / R0;
+        restart();
+
+        stoppedCallback = function() {
+            var x = R0;
+            var y = sir_counts[2] / (sir_counts[0] + sir_counts[1] + sir_counts[2]);
+            console.log("   " + run_index + ": " + x + ", " + y);
+            run_index++;
+            current_sum += y;
+            if (run_index == runsPerSetting) {
+                run_index=0;
+                setting_index++;
+                recordedR0ValuesX.push(x);
+                recordedR0ValuesY.push(current_sum / runsPerSetting);
+                console.log(x + ", " + y);
+                current_sum = 0;
+            }
+            initR0Program(run_index, setting_index, current_sum);
+        }
+    }
+}
 
 function appendSIRCountsToChart(sir_counts) {
     var t;
@@ -223,7 +256,9 @@ function initChart() {
         }
     });
     setInterval(function() {
-        chart.update();
+        if (settings['display_chart']) {
+            chart.update();
+        }
     }, 2000);
 }
 
@@ -232,7 +267,9 @@ function restart() {
     chart.data.datasets[0].data = [];
     chart.data.datasets[1].data = [];
     chart.data.datasets[2].data = [];
-    chart.update();
+    if (settings['display_chart']) {
+        chart.update();
+    }
     restartSimulation();
 }
 
@@ -542,6 +579,14 @@ function init() {
     gui.add(settings, 'true_randomness');
     gui.add(settings, 'target_fps', 0, 120).step(1);
     gui.add(settings, 'steps_per_frame', 1, 200).step(1);
+    gui.add(settings, 'display_chart').onChange(function(newValue) {
+        if (newValue) {
+            document.getElementById('chart').style.display = "block";
+            chart.update();
+        } else {
+            document.getElementById('chart').style.display = "none";
+        }
+    });
     gui.add(settings, 'Restart');
 
 	//////////////////////////////////////
@@ -1209,9 +1254,14 @@ function render() {
 
                 updateSIRChart();
 
-                if (sir_counts[1] == 0 && sir_counts[0]+sir_counts[2]>0) { // Terminate when the number of infected agents is zero
+                if ((sir_counts[1] == 0 || (sir_counts[2] == 0 && sir_counts[0] == 0)) && sir_counts[0]+sir_counts[1]+sir_counts[2]>0) { // Terminate when the number of infected agents is zero
                     running = false;
-                    setTimeout(function(){chart.update();}, 10);
+                    if (settings['display_chart']) {
+                        setTimeout(function(){chart.update();}, 10);
+                    }
+                    if (stoppedCallback != undefined) {
+                        stoppedCallback();
+                    }
                 }
             }
             renderTextureToScreen(SIRFramebuffer.colorTextures[0]);
