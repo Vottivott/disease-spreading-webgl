@@ -21,6 +21,8 @@ var settings = {
 
     display_chart: true,
 
+    // automatic_stopping: true,
+
     Restart: function() { restart(); },
 };
 
@@ -134,7 +136,7 @@ var sir_counts = [0, 0, 0];
 var stoppedCallback = undefined;
 var recordedR0ValuesX = [];
 var recordedR0ValuesY = [];
-var runsPerSetting = 1000;
+var runsPerSetting = 10;
 
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -143,7 +145,7 @@ window.addEventListener('DOMContentLoaded', function () {
     initChart();
 	resize();
 
-    initR0Program(0,0,0.0);
+    initR0Program(0,0,0 );
 
 	window.addEventListener('resize', resize, false);
 	requestAnimationFrame(render);
@@ -153,15 +155,25 @@ window.addEventListener('DOMContentLoaded', function () {
 function initR0Program(run_index, setting_index, current_sum) {
     
     // R0 = settings['transmission_rate'] / settings['recovery_rate']
-    var R0 = 20.0 - setting_index/10.0;
+    settings['initial_s'] = 990;
+    settings['initial_i'] = 10;
+    settings['true_randomness'] = true;
+    settings['display_chart'] = false;
+    settings['steps_per_frame'] = 10;
+
+    // settings['transmission_rate'] = 0.5;//0.6;
+
+    var R0 = 100.0 - 5.0 * setting_index ;// /5.0;
     if (settings['transmission_rate'] / R0 <= 1.0) {
         settings['recovery_rate'] = settings['transmission_rate'] / R0;
         restart();
+        updateChartTitle();
+        chart.update();
 
         stoppedCallback = function() {
             var x = R0;
             var y = sir_counts[2] / (sir_counts[0] + sir_counts[1] + sir_counts[2]);
-            console.log("   " + run_index + ": " + x + ", " + y);
+            // console.log("   " + run_index + ": " + x + ", " + y);
             run_index++;
             current_sum += y;
             if (run_index == runsPerSetting) {
@@ -169,11 +181,13 @@ function initR0Program(run_index, setting_index, current_sum) {
                 setting_index++;
                 recordedR0ValuesX.push(x);
                 recordedR0ValuesY.push(current_sum / runsPerSetting);
-                console.log(x + ", " + y);
+                console.log(x + ", " + current_sum / runsPerSetting);
                 current_sum = 0;
             }
             initR0Program(run_index, setting_index, current_sum);
         }
+    } else {
+        console.log("% Beta = " + settings['transmission_rate'] + "\nx = " + recordedR0ValuesX + "\ny = " + recordedR0ValuesY + "\n");
     }
 }
 
@@ -556,29 +570,29 @@ function init() {
 	gui = new dat.GUI();
     gui.add(settings, 'initial_s', 0, 10000).step(1).onChange(function(newValue) {
         restart();
-    });
+    }).listen();
     gui.add(settings, 'initial_i', 0, 10000).step(1).onChange(function(newValue) {
         restart();
-    });
+    }).listen();
     gui.add(settings, 'initial_r', 0, 10000).step(1).onChange(function(newValue) {
         restart();
-    });
+    }).listen();
     gui.add(settings, 'diffusion_rate', 0.0, 1.0).onChange(function(newValue) {
         updateChartTitle();
         chart.update();
-    });
+    }).listen();
     gui.add(settings, 'transmission_rate', 0.0, 1.0).onChange(function(newValue) {
         updateChartTitle();
         chart.update();
-    });
+    }).listen();
     gui.add(settings, 'recovery_rate', 0.0, 1.0).onChange(function(newValue) {
         updateChartTitle();
         chart.update();
-    });
-    gui.add(settings, 'periodic_boundary');
-    gui.add(settings, 'true_randomness');
-    gui.add(settings, 'target_fps', 0, 120).step(1);
-    gui.add(settings, 'steps_per_frame', 1, 200).step(1);
+    }).listen();
+    gui.add(settings, 'periodic_boundary').listen();
+    gui.add(settings, 'true_randomness').listen();
+    gui.add(settings, 'target_fps', 0, 120).step(1).listen();
+    gui.add(settings, 'steps_per_frame', 1, 200).step(1).listen();
     gui.add(settings, 'display_chart').onChange(function(newValue) {
         if (newValue) {
             document.getElementById('chart').style.display = "block";
@@ -586,7 +600,7 @@ function init() {
         } else {
             document.getElementById('chart').style.display = "none";
         }
-    });
+    }).listen();
     gui.add(settings, 'Restart');
 
 	//////////////////////////////////////

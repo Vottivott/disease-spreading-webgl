@@ -144,22 +144,22 @@ void main()
     float recoveries = 0.0;
 
     // // Infection
-    // for (float s = 0.0; s < current_S; s++) {
-    //     // TODO: Check whether this is the correct interpretation
-    //     for (float i = 0.0; i < current_I; i++) {
-    //         float rand = random(x,y,r_index++);
-    //         if (rand < u_transmission_rate) {
-    //             transmissions++;
-    //             break; // We are now infected, break to avoid double-counting
-    //         }
-    //     }
-    // }
+    for (float s = 0.0; s < current_S; s++) {
+        // TODO: Check whether this is the correct interpretation
+        for (float i = 0.0; i < current_I; i++) {
+            float rand = random(x,y,r_index++);
+            if (rand < u_transmission_rate) {
+                transmissions++;
+                break; // We are now infected, break to avoid double-counting
+            }
+        }
+    }
 
     // Infection, new interpretation (an infected infects either ALL others or no one)
-    float rand = random(x,y,r_index++);
-    if (rand >= pow(1.0-u_transmission_rate, current_I)) { // We calculate the probability of NOT infecting anyone
-        transmissions = current_S;
-    }
+    // float rand = random(x,y,r_index++);
+    // if (rand >= pow(1.0-u_transmission_rate, current_I)) { // We calculate the probability of NOT infecting anyone
+    //     transmissions = current_S;
+    // }
 
     // Recovery
     for (float i = 0.0; i < current_I; i++) {
