@@ -32,7 +32,7 @@ var sceneSettings = {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var running = true;
+var running = false;
 
 var app;
 
@@ -136,7 +136,7 @@ var sir_counts = [0, 0, 0];
 var stoppedCallback = undefined;
 var recordedR0ValuesX = [];
 var recordedR0ValuesY = [];
-var runsPerSetting = 10;
+var runsPerSetting = 2;//10;
 
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -144,6 +144,7 @@ window.addEventListener('DOMContentLoaded', function () {
 	init();
     initChart();
 	resize();
+
 
     initR0Program(0,0,0 );
 
@@ -155,20 +156,22 @@ window.addEventListener('DOMContentLoaded', function () {
 function initR0Program(run_index, setting_index, current_sum) {
     
     // R0 = settings['transmission_rate'] / settings['recovery_rate']
-    settings['initial_s'] = 990;
-    settings['initial_i'] = 10;
-    settings['true_randomness'] = true;
-    settings['display_chart'] = false;
-    settings['steps_per_frame'] = 10;
+    if (setting_index == 0 && run_index == 0) {
+        settings['initial_s'] = 990;
+        settings['initial_i'] = 10;
+        settings['true_randomness'] = true;
+        settings['display_chart'] = false;
+        settings['steps_per_frame'] = 10;
+    }
 
-    // settings['transmission_rate'] = 0.5;//0.6;
 
     var R0 = 100.0 - 5.0 * setting_index ;// /5.0;
     if (settings['transmission_rate'] / R0 <= 1.0) {
         settings['recovery_rate'] = settings['transmission_rate'] / R0;
-        restart();
-        updateChartTitle();
-        chart.update();
+        if (!(setting_index == 0 && run_index == 0))
+            restart();
+        // updateChartTitle();
+        // chart.update();
 
         stoppedCallback = function() {
             var x = R0;
@@ -187,7 +190,9 @@ function initR0Program(run_index, setting_index, current_sum) {
             initR0Program(run_index, setting_index, current_sum);
         }
     } else {
-        console.log("% Beta = " + settings['transmission_rate'] + "\nx = " + recordedR0ValuesX + "\ny = " + recordedR0ValuesY + "\n");
+        console.log("Finished!");
+        console.log("% Beta = " + settings['transmission_rate'] + "\nx = [ " + recordedR0ValuesX + " ];\ny = [ " + recordedR0ValuesY + " ];\n");
+        stoppedCallback = undefined;
     }
 }
 
@@ -584,7 +589,7 @@ function init() {
     gui.add(settings, 'transmission_rate', 0.0, 1.0).onChange(function(newValue) {
         updateChartTitle();
         chart.update();
-    }).listen();
+    }).step(0.1).listen();
     gui.add(settings, 'recovery_rate', 0.0, 1.0).onChange(function(newValue) {
         updateChartTitle();
         chart.update();
