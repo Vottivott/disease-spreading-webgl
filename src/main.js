@@ -136,7 +136,7 @@ var sir_counts = [0, 0, 0];
 var stoppedCallback = undefined;
 var recordedR0ValuesX = [];
 var recordedR0ValuesY = [];
-var runsPerSetting = 2;//10;
+var runsPerSetting = 10;//10;
 
 
 window.addEventListener('DOMContentLoaded', function () {
